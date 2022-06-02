@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
@@ -6,8 +6,10 @@ import "quill/dist/quill.snow.css";
 import { Box } from "@mui/material";
 import styled from "@emotion/styled";
 
+import { io } from "socket.io-client";
+
 const Component = styled.div`
-  background : #f6f6f6 ;
+  background: #f6f6f6;
 `;
 
 const toolbarOptions = [
@@ -30,14 +32,58 @@ const toolbarOptions = [
 ];
 
 const Editor = () => {
+  const [socket, setSocket] = useState();
+  const [quill, setQuill] = useState();
+
   useEffect(() => {
-    const quill = new Quill("#container", {
+    const quillServer = new Quill("#container", {
       theme: "snow",
       modules: {
         toolbar: toolbarOptions,
       },
     });
+    setQuill(quillServer);
   }, []); // Component did mount
+
+  useEffect(() => {
+    const socketServer = io("http://localhost:9000");
+    setSocket(socketServer);
+    return () => {
+      socketServer.disconnect();
+    };
+  },[]); // socket did unmount
+
+  // Sending changes
+  useEffect(() => {
+    if (socket === null || quill === null) {
+      return;
+    }
+
+    const handleCHange = (delta, oldData, source) => {
+      if (source !== "user") return;
+     socket && socket.emit("send-changes", delta);
+    };
+    quill && quill.on("text-change", handleCHange);
+
+    return () => {
+    quill &&  quill.off("text-change", handleCHange);
+    };
+  },[quill,socket]);
+
+  // Listening to changes
+  useEffect(() => {
+    if (socket === null || quill === null) {
+      return;
+    }
+    const handleCHange = (delta) => {
+      quill.updateContents(delta);
+    };
+    socket && socket.on("receive-changes", handleCHange);
+
+    return () => {
+    socket &&  socket.off("receive-changes", handleCHange);
+    };
+  },[quill,socket]);
 
   return (
     <Component>
