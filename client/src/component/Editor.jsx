@@ -7,6 +7,7 @@ import { Box } from "@mui/material";
 import styled from "@emotion/styled";
 
 import { io } from "socket.io-client";
+import { useParams } from "react-router-dom";
 
 const Component = styled.div`
   background: #f6f6f6;
@@ -34,6 +35,7 @@ const toolbarOptions = [
 const Editor = () => {
   const [socket, setSocket] = useState();
   const [quill, setQuill] = useState();
+  const {id} = useParams()
 
   useEffect(() => {
     const quillServer = new Quill("#container", {
@@ -42,6 +44,8 @@ const Editor = () => {
         toolbar: toolbarOptions,
       },
     });
+    quillServer.disable()
+    quillServer.setText('Loading the document')
     setQuill(quillServer);
   }, []); // Component did mount
 
@@ -84,6 +88,31 @@ const Editor = () => {
     socket &&  socket.off("receive-changes", handleCHange);
     };
   },[quill,socket]);
+
+  // Loading The Document
+  useEffect(()=>{
+    if (socket === null || quill === null) {
+      return;
+    }
+    socket && socket.once('load-document', document =>{
+      quill && quill.setContents(document);
+      quill && quill.enable();
+    })
+
+    socket && socket.emit('get-document',id);
+  },[quill,socket,id])
+
+  useEffect(()=>{
+    if (socket === null || quill === null) {
+      return;
+    }
+    const interval =setInterval(()=>{
+      socket && socket.emit('save-document',quill.getContents())
+    },2000)
+    return () => {
+      clearInterval(interval);
+    }
+  })
 
   return (
     <Component>
