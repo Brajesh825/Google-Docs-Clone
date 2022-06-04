@@ -2,11 +2,22 @@
      alt="preview"
      style="float: left; margin-right: 10px;" />
 
-## Index
 
+
+## Index
+* [Technologies Used](#technology)
 * [Features](#features)
 * [Installation](#installation)
 * [Environment Variables](#environment-variables)
+
+## Technologies Used
+
+* React.js
+* Node.js
+* MongoDB
+* socket.io
+* Material UI
+
 
 ## Features
 
